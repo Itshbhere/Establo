@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("4qeLVUWckMZkhxAMKT92qGmj9Zr7f5rooN16hqmwyrQU");
+declare_id!("2tPFAWN8KNcMfWyMQ2Y522dPptcbaZHYE8bM9y7NzZva");
 
 #[program]
 pub mod green_stablecoin {
@@ -41,13 +41,13 @@ pub mod green_stablecoin {
             .ok_or(StablecoinError::InsufficientAmount)?;
 
         // Transfer amount_after_fee to recipient
+        let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_accounts = Transfer {
             from: ctx.accounts.sender_token_account.to_account_info(),
             to: ctx.accounts.recipient_token_account.to_account_info(),
             authority: ctx.accounts.sender.to_account_info(),
         };
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        let cpi_ctx = CpiContext::new(cpi_program.clone(), cpi_accounts);
         token::transfer(cpi_ctx, amount_after_fee)?;
 
         // Transfer fee to DAO
