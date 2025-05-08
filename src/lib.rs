@@ -1,6 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
+// Add RWA marketplace module
+pub mod rwa_marketplace;
+
 declare_id!("2tPFAWN8KNcMfWyMQ2Y522dPptcbaZHYE8bM9y7NzZva");
 
 #[program]
