@@ -12,11 +12,10 @@ export default function MintPage() {
   const { publicKey } = useWallet();
   const { balance, reserves, loading, mintTokens } = useStablecoin();
   const [amount, setAmount] = useState<string>('');
-  
+
   const handleMint = async () => {
     if (!publicKey || !amount) return;
-    
-    // Validate amount
+
     try {
       const amountNum = new Decimal(amount);
       if (amountNum.isNaN() || amountNum.lte(0)) {
@@ -27,9 +26,9 @@ export default function MintPage() {
         });
         return;
       }
-      
+
       await mintTokens(amount, publicKey);
-      setAmount(''); // Reset after successful mint
+      setAmount('');
     } catch (error: any) {
       toast({
         title: "Error",
@@ -38,118 +37,99 @@ export default function MintPage() {
       });
     }
   };
-  
-  const handleMax = () => {
-    // In a real app, this would be based on USDT balance
-    setAmount('1000');
-  };
-  
+
   return (
-    <div className="container py-12">
-      <h1 className="mb-8 text-center text-4xl font-bold md:text-5xl">
-        <span className="gradient-text">Mint</span> Establo Stablecoin
-      </h1>
-      
-      <div className="mx-auto max-w-2xl">
-        <div className="overflow-hidden rounded-lg border border-establo-purple/20 bg-gradient-to-br from-establo-purple-dark/5 to-establo-purple-light/5 p-6 shadow-lg">
-          <div className="mb-6 rounded bg-establo-black/50 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-establo-offwhite">Available USDT</span>
-              <span className="font-mono font-medium">1,000.00 USDT</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-establo-offwhite">Your Establo Balance</span>
-              <span className="font-mono font-medium">{balance} ESTB</span>
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <div className="mb-6">
-              <label htmlFor="amount" className="mb-2 block text-sm text-establo-offwhite">
-                Amount to Mint
-              </label>
-              <div className="relative">
+    <div className="relative min-h-screen overflow-hidden bg-establo-black text-white flex flex-col items-center justify-center px-4">
+      {/* Gradient Circles */}
+      <div className="absolute -right-40 -top-40 h-[500px] w-[500px] rounded-full bg-establo-purple/20 blur-3xl z-0"></div>
+      <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-establo-purple/20 blur-3xl z-0"></div>
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-md">
+        <h1 className="text-3xl md:text-4xl font-semibold text-center mb-8">
+          Swap anytime,<br />anywhere.
+        </h1>
+
+        <div className="bg-[#111111] rounded-2xl p-2 shadow-xl">
+          {/* Swap Box Container */}
+          <div className="relative space-y-1">
+            {/* Sell Section */}
+            <div className="bg-[#1c1c1c] rounded-xl p-4">
+              <div className="flex justify-between text-sm text-gray-400 mb-1">
+                <span>Sell</span>
+              </div>
+              <div className="flex items-center justify-between">
                 <input
                   type="number"
-                  id="amount"
-                  placeholder="0.00"
-                  className="w-full rounded-md border border-establo-purple/30 bg-establo-black/50 px-4 py-2 font-mono text-lg text-establo-white placeholder:text-establo-offwhite/50 focus:border-establo-purple focus:outline-none"
+                  placeholder="0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  className="bg-transparent text-2xl font-semibold placeholder:text-gray-500 outline-none w-full"
                 />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <span className="text-sm text-establo-offwhite">ESTB</span>
-                </div>
-              </div>
-              <div className="mt-1 flex justify-between">
-                <span className="text-xs text-establo-offwhite">Min: 1 ESTB</span>
-                <button 
-                  className="text-xs text-establo-purple hover:text-establo-purple-light"
-                  onClick={handleMax}
+                <Button
+                  variant="outline"
+                  className="bg-[#2a2a2a] text-white ml-2 rounded-full px-4 py-1 text-sm flex items-center gap-1"
                 >
-                  Max
-                </button>
+                  <img src="/icons/eth.svg" alt="ETH" className="w-5 h-5" />
+                  ETH
+                </Button>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                ${Number(amount) * 2500 ? (Number(amount) * 2500).toLocaleString() : 0}
               </div>
             </div>
-            
-            <div className="mb-4 rounded-md bg-gradient-to-r from-establo-purple-dark/10 to-establo-purple-light/10 p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-establo-offwhite">Exchange Rate</span>
-                <span className="font-mono text-sm">1 USDT = 1 ESTB</span>
+
+            {/* Arrow - perfectly between */}
+            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-2xl z-10">
+              <div className="bg-[#1c1c1c] p-2 rounded-2xl border-4 border-[#111111] shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-arrow-down-icon lucide-arrow-down">
+                  <path d="M12 5v14" />
+                  <path d="m19 12-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Buy Section */}
+            <div className="bg-[#131313] rounded-xl p-4 border border-white/10">
+              <div className="flex justify-between text-sm text-gray-400 mb-1">
+                <span>Buy</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-establo-offwhite">Transaction Fee</span>
-                <span className="font-mono text-sm">0.00 USDT</span>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={amount ? (Number(amount) * 2500).toFixed(0) : ''}
+                  readOnly
+                  className="bg-transparent text-2xl font-semibold placeholder:text-gray-500 outline-none w-full"
+                />
+                <Button
+                  variant="outline"
+                  className="bg-[#2a2a2a] text-white ml-2 rounded-full px-4 py-1 text-sm flex items-center gap-1"
+                >
+                  <img src="/icons/usdc.svg" alt="USDC" className="w-5 h-5" />
+                  USDC
+                </Button>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-establo-offwhite">Backing Status</span>
-                <span className="font-mono text-sm">
-                  {reserves.isFullyBacked ? '✅ Fully Backed' : '⚠️ Partially Backed'}
-                </span>
+              <div className="text-xs text-gray-400 mt-1">
+                ${Number(amount) * 2500 ? (Number(amount) * 2500).toLocaleString() : 0}
               </div>
             </div>
           </div>
-          
-          <Button 
-            variant="gradient" 
-            className="w-full" 
-            size="lg"
+
+          {/* CTA Button */}
+          <Button
             onClick={handleMint}
             disabled={!publicKey || loading || !amount}
+            className="w-full mt-1 gradient text-white font-semibold rounded-xl py-6 text-center"
           >
-            {loading ? 'Processing...' : !publicKey ? 'Connect Wallet First' : 'Mint Establo'}
+            {loading ? 'Processing...' : !publicKey ? 'Connect Wallet First' : 'Get started'}
           </Button>
         </div>
-        
-        <div className="mt-10">
-          <h2 className="mb-4 text-2xl font-bold">
-            <span className="gradient-text">How it Works</span>
-          </h2>
-          
-          <div className="space-y-4">
-            <div className="rounded-md bg-gradient-to-br from-establo-purple-dark/10 to-establo-purple-light/10 p-4">
-              <h3 className="mb-2 text-lg font-medium">1. Deposit USDT</h3>
-              <p className="text-sm text-establo-offwhite">
-                Connect your wallet and deposit USDT to mint Establo tokens at a 1:1 ratio.
-              </p>
-            </div>
-            
-            <div className="rounded-md bg-gradient-to-br from-establo-purple-dark/10 to-establo-purple-light/10 p-4">
-              <h3 className="mb-2 text-lg font-medium">2. Receive Establo Tokens</h3>
-              <p className="text-sm text-establo-offwhite">
-                Your ESTB tokens will be immediately added to your wallet and ready to use.
-              </p>
-            </div>
-            
-            <div className="rounded-md bg-gradient-to-br from-establo-purple-dark/10 to-establo-purple-light/10 p-4">
-              <h3 className="mb-2 text-lg font-medium">3. Real-World Backing</h3>
-              <p className="text-sm text-establo-offwhite">
-                Your USDT contributes to the 70% liquid backing, while 30% is backed by tokenized real estate.
-              </p>
-            </div>
-          </div>
-        </div>
+
+        <p className="text-xs text-gray-400 mt-6 text-center max-w-sm">
+          The largest onchain marketplace. Buy and sell crypto on Ethereum and 12+ other chains.
+        </p>
       </div>
     </div>
-  )
-} 
+  );
+}
