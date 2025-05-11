@@ -52,7 +52,7 @@ export function StatCard({
       </div>
 
       {/* Spacer */}
-      <div style={{ marginTop: "90px" }} />
+      <div style={{ marginTop: "80px" }} />
 
       {/* Bottom: Animated value */}
       <StringInterpolationWithMotion
