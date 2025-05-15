@@ -29,6 +29,7 @@ export default function Header() {
         <nav className="hidden md:flex">
           <ul className="flex gap-8">
             <li><Link href="/" className="text-establo-offwhite hover:text-establo-white">Home</Link></li>
+            <li><Link href="/swap" className="text-establo-offwhite hover:text-establo-white">Swap</Link></li>
             <li><Link href="/mint" className="text-establo-offwhite hover:text-establo-white">Mint</Link></li>
             <li><Link href="/dashboard" className="text-establo-offwhite hover:text-establo-white">Dashboard</Link></li>
             <li><Link href="/rwa-marketplace" className="text-establo-offwhite hover:text-establo-white">RWA Marketplace</Link></li>
