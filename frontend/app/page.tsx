@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { StatCard } from '@/components/ui/StatCards'
-
+import DaoImpactCard from '@/components/DaoImpactCard'
 export default function Home() {
   const dummyData = {
     title: "Revenue",
@@ -138,6 +138,9 @@ export default function Home() {
             <Link href="/mint">Get Started Now</Link>
           </Button>
         </div>
+      </section>
+      <section className="container">
+        <DaoImpactCard />
       </section>
     </div>
   )
