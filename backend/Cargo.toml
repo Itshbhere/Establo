@@ -1,0 +1,44 @@
+[package]
+name = "green-stablecoin"
+version = "0.1.0"
+description = "Multi-backed stablecoin on Solana with RWA marketplace"
+edition = "2021"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "green_stablecoin"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[profile.release]
+overflow-checks = true  # Enable overflow checks for financial safety
+lto = "fat"             # Enable Link Time Optimization for better performance
+codegen-units = 1       # Optimize for size rather than parallel compilation
+panic = "abort"         # Abort on panic for smaller code size
+opt-level = 3           # Optimize for maximum performance
+
+[dependencies]
+anchor-lang = "=0.26.0"
+anchor-spl = "=0.26.0"
+solana-program = "=1.14.12"
+# Pin borsh to avoid serialization conflicts
+borsh = "=0.9.3"
+# Use a simpler version of token-metadata without auth-rules
+mpl-token-metadata = { version = "1.6.5", features = ["no-entrypoint"] }
+thiserror = "1.0.40"
+
+[dev-dependencies]
+solana-program-test = "=1.14.12"
+solana-sdk = "=1.14.12"
+tokio = { version = "1.14.1", features = ["full"] }
+
+# Use patch to fix borsh compatibility issues
+[patch.crates-io]
+borsh = { version = "0.9.3" }
+borsh-derive = { version = "0.9.3" } 

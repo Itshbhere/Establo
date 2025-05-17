@@ -1,0 +1,23 @@
+[features]
+seeds = true
+skip-lint = false
+
+[programs.localnet]
+green_stablecoin = "2tPFAWN8KNcMfWyMQ2Y522dPptcbaZHYE8bM9y7NzZva"
+
+[programs.devnet]
+green_stablecoin = "2tPFAWN8KNcMfWyMQ2Y522dPptcbaZHYE8bM9y7NzZva"
+
+[programs.mainnet]
+green_stablecoin = "2tPFAWN8KNcMfWyMQ2Y522dPptcbaZHYE8bM9y7NzZva"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test-rwa = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/rwa-marketplace-integration.js" 
