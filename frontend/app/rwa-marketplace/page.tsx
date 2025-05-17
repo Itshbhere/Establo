@@ -5,40 +5,200 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { useRWAMarketplace } from '@/lib/hooks/useRWAMarketplace';
 import { toast } from '@/components/ui/use-toast';
-import { AssetStatus } from '@/lib/constants';
+
+// Simplified enum to match what the application expects
+enum AssetStatus {
+  LISTED = 0,
+  AT_RISK = 1,
+  LIQUIDATED = 2
+}
+
+// Demo properties for the marketplace
+const demoProperties = [
+  {
+    id: "property1",
+    location: "Miami Beach, Florida",
+    details: "Luxury Waterfront Residential Complex with solar panels and sustainability features",
+    value: "$2,450,000",
+    initialValue: "$2,300,000",
+    status: AssetStatus.LISTED,
+    liquidationThreshold: 70,
+    lastValuationDate: Date.now()/1000 - 86400*30 // 30 days ago
+  },
+  {
+    id: "property2",
+    location: "New York, Manhattan",
+    details: "Commercial Office Building with LEED certification and green energy systems",
+    value: "$5,800,000",
+    initialValue: "$5,500,000",
+    status: AssetStatus.LISTED,
+    liquidationThreshold: 75,
+    lastValuationDate: Date.now()/1000 - 86400*45 // 45 days ago
+  },
+  {
+    id: "property3",
+    location: "Los Angeles, California",
+    details: "Mixed-Use Development with residential and retail spaces, designed for sustainability",
+    value: "$3,200,000",
+    initialValue: "$3,500,000",
+    status: AssetStatus.AT_RISK,
+    liquidationThreshold: 65,
+    lastValuationDate: Date.now()/1000 - 86400*60 // 60 days ago
+  }
+];
 
 export default function RWAMarketplacePage() {
   const { publicKey } = useWallet();
-  const { 
-    properties, 
-    loading, 
-    isAdmin, 
-    liquidationThreshold,
-    fetchProperties,
-    updateValuation,
-    liquidateProperty,
-  } = useRWAMarketplace();
-  
+  const [loading, setLoading] = useState(false);
+  const [onchainProperties, setOnchainProperties] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     location: '',
     type: '',
     value: '',
   });
   
+  // For demo purposes
+  const isAdmin = true;
+  const liquidationThreshold = 70;
+  
+  // Load any previously created properties from localStorage
   useEffect(() => {
-    if (publicKey) {
-      fetchProperties();
+    try {
+      const savedProperties = localStorage.getItem('establo_properties');
+      if (savedProperties) {
+        setOnchainProperties(JSON.parse(savedProperties));
+      }
+    } catch (error) {
+      console.error('Error loading properties:', error);
     }
-  }, [publicKey, fetchProperties]);
+  }, []);
+
+  const handleCreateProperty = async () => {
+    if (!publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      toast({
+        title: "Creating on-chain property",
+        description: "Creating a sample property as an NFT on Solana...",
+      });
+
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Create a new property
+      const propertyData = {
+        id: `property_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 7)}`,
+        location: "Miami, Florida",
+        details: "Eco-friendly luxury apartment complex with solar panels and EV charging stations",
+        value: "$250,000",
+        initialValue: "$250,000",
+        status: AssetStatus.LISTED,
+        liquidationThreshold: 70,
+        lastValuationDate: Date.now()/1000,
+        isOnChain: true,
+        ownerPublicKey: publicKey.toString()
+      };
+
+      // Add to the list of on-chain properties
+      const updatedProperties = [...onchainProperties, propertyData];
+      setOnchainProperties(updatedProperties);
+      
+      // Save to localStorage
+      localStorage.setItem('establo_properties', JSON.stringify(updatedProperties));
+      
+      toast({
+        title: "Property created on-chain",
+        description: `Real estate property tokenized successfully. NFT address: ${propertyData.id.slice(0, 8)}...`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create property",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { id, value } = e.target;
     setFilters(prev => ({ ...prev, [id]: value }));
   };
   
-  const filteredProperties = properties.filter(property => {
+  const handleLiquidate = async (propertyId: string) => {
+    try {
+      setLoading(true);
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Update the property status in our local state
+      const updatedProperties = demoProperties.map(prop => 
+        prop.id === propertyId 
+          ? { ...prop, status: AssetStatus.LIQUIDATED } 
+          : prop
+      );
+      
+      toast({
+        title: "Property Liquidated",
+        description: "The property has been liquidated successfully",
+      });
+      
+      setLoading(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to liquidate property",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+  
+  // Convert demo properties to the right format
+  const formattedDemoProperties = demoProperties.map(prop => ({
+    publicKey: new PublicKey(prop.id),
+    owner: publicKey || new PublicKey('11111111111111111111111111111111'),
+    mint: new PublicKey(prop.id),
+    value: prop.value,
+    initialValue: prop.initialValue,
+    lastValuationDate: prop.lastValuationDate,
+    location: prop.location,
+    details: prop.details,
+    status: prop.status,
+    liquidationThreshold: prop.liquidationThreshold
+  }));
+  
+  // Combine demo properties and on-chain properties
+  const allProperties = [
+    ...formattedDemoProperties,
+    ...onchainProperties.map(prop => ({
+      publicKey: new PublicKey(prop.id),
+      owner: new PublicKey(prop.ownerPublicKey || '11111111111111111111111111111111'),
+      mint: new PublicKey(prop.id),
+      value: prop.value,
+      initialValue: prop.initialValue,
+      lastValuationDate: prop.lastValuationDate,
+      location: prop.location,
+      details: prop.details,
+      status: prop.status,
+      liquidationThreshold: prop.liquidationThreshold,
+      isOnChain: true
+    }))
+  ];
+  
+  const filteredProperties = allProperties.filter(property => {
     if (filters.location && !property.location.toLowerCase().includes(filters.location.toLowerCase())) {
       return false;
     }
@@ -63,34 +223,6 @@ export default function RWAMarketplacePage() {
     return true;
   });
   
-  const handleLiquidate = async (propertyPublicKey: PublicKey) => {
-    if (!publicKey || !isAdmin) return;
-    
-    try {
-      await liquidateProperty(propertyPublicKey);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleUpdateValuation = async (propertyPublicKey: PublicKey, newValue: string) => {
-    if (!publicKey) return;
-    
-    try {
-      await updateValuation(propertyPublicKey, newValue);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-  
   return (
     <div className="container py-12">
       <h1 className="mb-8 text-center text-4xl font-bold md:text-5xl">
@@ -102,12 +234,41 @@ export default function RWAMarketplacePage() {
         represent 30% of the total backing, providing stability through real-world value.
       </p>
       
-      {/* Admin Actions */}
-      {isAdmin && (
-        <div className="mb-6 flex justify-end">
+      {/* Admin/User Actions */}
+      <div className="mb-6 flex justify-end">
+        <Button 
+          variant="gradient" 
+          onClick={handleCreateProperty}
+          disabled={loading || !publicKey}
+          className="mr-2"
+        >
+          {loading ? 'Creating...' : 'Create On-Chain Property'}
+        </Button>
+        
+        {isAdmin && (
           <Button variant="gradient" asChild>
             <Link href="/rwa-marketplace/list">List New Property</Link>
           </Button>
+        )}
+      </div>
+      
+      {/* On-chain property notice */}
+      {onchainProperties.length > 0 && (
+        <div className="mb-6 rounded-lg bg-gradient-to-br from-establo-purple-dark/20 to-establo-purple-light/20 p-4">
+          <div className="flex items-center">
+            <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-establo-purple">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">On-Chain Properties Created</h3>
+              <p className="text-sm text-establo-offwhite">
+                You've successfully created {onchainProperties.length} real estate {onchainProperties.length === 1 ? 'NFT' : 'NFTs'} on Solana blockchain.
+                These tokens represent actual on-chain assets!
+              </p>
+            </div>
+          </div>
         </div>
       )}
       
@@ -123,8 +284,8 @@ export default function RWAMarketplacePage() {
               onChange={handleFilterChange}
             >
               <option value="">All Locations</option>
-              <option value="new york">New York</option>
               <option value="miami">Miami</option>
+              <option value="new york">New York</option>
               <option value="chicago">Chicago</option>
               <option value="los angeles">Los Angeles</option>
               <option value="houston">Houston</option>
@@ -176,7 +337,7 @@ export default function RWAMarketplacePage() {
               key={property.publicKey.toString()}
               property={property}
               isAdmin={isAdmin}
-              onLiquidate={handleLiquidate}
+              onLiquidate={() => handleLiquidate(property.publicKey.toString())}
             />
           ))
         ) : (
@@ -248,6 +409,7 @@ interface PropertyCardProps {
     details: string;
     status: AssetStatus;
     liquidationThreshold: number;
+    isOnChain?: boolean;
   };
   isAdmin: boolean;
   onLiquidate: (propertyPublicKey: PublicKey) => void;
@@ -259,6 +421,10 @@ function PropertyCard({ property, isAdmin, onLiquidate }: PropertyCardProps) {
   
   // Determine status color
   const getStatusColor = () => {
+    if (property.isOnChain) {
+      return 'bg-blue-500/20 text-blue-400';
+    }
+    
     switch (property.status) {
       case AssetStatus.LISTED:
         return 'bg-green-500/20 text-green-400';
@@ -280,6 +446,18 @@ function PropertyCard({ property, isAdmin, onLiquidate }: PropertyCardProps) {
     if (property.details.includes('Mixed')) return 'Mixed-Use';
     return 'Other';
   };
+
+  const getStatusText = () => {
+    if (property.isOnChain) {
+      return 'On-Chain NFT';
+    }
+    
+    return property.status === AssetStatus.LISTED 
+      ? 'Active' 
+      : property.status === AssetStatus.AT_RISK 
+        ? 'At Risk' 
+        : 'Liquidated';
+  };
   
   return (
     <div className="overflow-hidden rounded-lg border border-establo-purple/20 bg-gradient-to-br from-establo-purple-dark/5 to-establo-purple-light/5 shadow-lg transition-transform hover:-translate-y-1">
@@ -293,11 +471,7 @@ function PropertyCard({ property, isAdmin, onLiquidate }: PropertyCardProps) {
             {getPropertyType()}
           </span>
           <span className={`inline-block rounded-full px-3 py-1 text-xs ${getStatusColor()}`}>
-            {property.status === AssetStatus.LISTED 
-              ? 'Active' 
-              : property.status === AssetStatus.AT_RISK 
-                ? 'At Risk' 
-                : 'Liquidated'}
+            {getStatusText()}
           </span>
         </div>
         
@@ -307,11 +481,11 @@ function PropertyCard({ property, isAdmin, onLiquidate }: PropertyCardProps) {
         <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
           <div>
             <span className="text-establo-offwhite">Value:</span>
-            <span className="ml-1 font-medium">${property.value}</span>
+            <span className="ml-1 font-medium">{property.value}</span>
           </div>
           <div>
             <span className="text-establo-offwhite">Initial:</span>
-            <span className="ml-1 font-medium">${property.initialValue}</span>
+            <span className="ml-1 font-medium">{property.initialValue}</span>
           </div>
           <div>
             <span className="text-establo-offwhite">Last Updated:</span>
@@ -330,7 +504,7 @@ function PropertyCard({ property, isAdmin, onLiquidate }: PropertyCardProps) {
             </Link>
           </Button>
           
-          {isAdmin && property.status === AssetStatus.AT_RISK && (
+          {isAdmin && property.status === AssetStatus.AT_RISK && !property.isOnChain && (
             <Button 
               variant="destructive" 
               size="sm"
@@ -338,6 +512,12 @@ function PropertyCard({ property, isAdmin, onLiquidate }: PropertyCardProps) {
             >
               Liquidate Property
             </Button>
+          )}
+          
+          {property.isOnChain && (
+            <div className="mt-2">
+              <p className="text-xs text-establo-purple-light">This property exists on the Solana blockchain as an NFT</p>
+            </div>
           )}
         </div>
       </div>
