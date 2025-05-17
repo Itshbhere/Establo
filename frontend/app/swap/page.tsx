@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useStablecoin } from '@/lib/hooks/useStablecoin';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from '@/components/ui/use-toast';
 import Decimal from 'decimal.js';
+import EstabloService from '../../src/services/establo-service';
 
-const TOKENS = ['ETH', 'BTC', 'USDC'];
+// We only have two tokens - SOL and EUSD
+const TOKENS = ['SOL', 'EUSD'];
 
 export default function MintPage() {
     const { publicKey } = useWallet();
@@ -15,19 +17,29 @@ export default function MintPage() {
     const [amount, setAmount] = useState<string>('');
     const [isSwapped, setIsSwapped] = useState(false);
 
-    const [fromToken, setFromToken] = useState('ETH');
-    const [toToken, setToToken] = useState('');
+    // Initialize with SOL at the top and EUSD at the bottom
+    const [fromToken, setFromToken] = useState('SOL');
+    const [toToken, setToToken] = useState('EUSD');
 
+    // When the swap button is pressed, we exchange the tokens
     const handleSwap = () => {
         setIsSwapped(!isSwapped);
         setFromToken(toToken);
         setToToken(fromToken);
     };
 
+    // Automatically update the opposite token whenever one changes
+    useEffect(() => {
+        if (fromToken === 'SOL') {
+            setToToken('EUSD');
+        } else {
+            setToToken('SOL');
+        }
+    }, [fromToken]);
+
     const getConversionRate = (token: string) => {
-        if (token === 'ETH') return 2500;
-        if (token === 'BTC') return 65000;
-        if (token === 'USDC') return 1;
+        if (token === 'SOL') return 105;
+        if (token === 'EUSD') return 1;
         return 0;
     };
 
@@ -59,9 +71,6 @@ export default function MintPage() {
     const conversionRate = getConversionRate(fromToken);
     const convertedAmount = amount ? (Number(amount) * conversionRate).toFixed(2) : '';
 
-    const availableFromTokens = TOKENS.filter((token) => token !== toToken);
-    const availableToTokens = TOKENS.filter((token) => token !== fromToken);
-
     return (
         <div className="relative min-h-screen overflow-hidden bg-establo-black text-white flex flex-col items-center justify-center px-4">
             <div className="absolute -right-40 -top-40 h-[500px] w-[500px] rounded-full bg-establo-purple/20 blur-3xl z-0"></div>
@@ -90,15 +99,9 @@ export default function MintPage() {
                                     onChange={(e) => setAmount(e.target.value)}
                                     className="bg-transparent text-2xl font-semibold placeholder:text-gray-500 outline-none w-full [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                 />
-                                <select
-                                    value={fromToken}
-                                    onChange={(e) => setFromToken(e.target.value)}
-                                    className="bg-[#2a2a2a] text-white ml-2 rounded-full px-4 py-1 text-sm"
-                                >
-                                    {availableFromTokens.map((token) => (
-                                        <option key={token} value={token}>{token}</option>
-                                    ))}
-                                </select>
+                                <div className="bg-[#2a2a2a] text-white ml-2 rounded-full px-4 py-1 text-sm">
+                                    {fromToken}
+                                </div>
                             </div>
                             <div className="text-xs text-gray-400 mt-1">
                                 ${convertedAmount}
@@ -146,16 +149,9 @@ export default function MintPage() {
                                     value={convertedAmount}
                                     className="bg-transparent text-2xl font-semibold placeholder:text-gray-500 outline-none w-full"
                                 />
-                                <select
-                                    value={toToken}
-                                    onChange={(e) => setToToken(e.target.value)}
-                                    className="bg-[#6B1CA8] text-white ml-2 rounded-full px-4 py-1 text-sm"
-                                >
-                                    <option value="">Select token</option>
-                                    {availableToTokens.map((token) => (
-                                        <option key={token} value={token}>{token}</option>
-                                    ))}
-                                </select>
+                                <div className="bg-[#6B1CA8] text-white ml-2 rounded-full px-4 py-1 text-sm">
+                                    {toToken}
+                                </div>
                             </div>
                             <div className="text-xs text-gray-400 mt-1">
                                 ${convertedAmount}
@@ -165,15 +161,15 @@ export default function MintPage() {
 
                     <Button
                         onClick={handleMint}
-                        disabled={!publicKey || loading || !amount || !fromToken || !toToken}
+                        disabled={!publicKey || loading || !amount}
                         className="w-full mt-1 gradient text-white font-semibold rounded-xl py-6 text-center"
                     >
-                        {loading ? 'Processing...' : !publicKey ? 'Connect Wallet First' : 'Get started'}
+                        {loading ? 'Processing...' : !publicKey ? 'Connect Wallet First' : 'Swap'}
                     </Button>
                 </div>
 
                 <p className="text-xs text-gray-400 mt-6 text-center max-w-sm">
-                    The largest onchain marketplace. Buy and sell crypto on Ethereum and 12+ other chains.
+                    Swap between SOL and EUSD on the Solana blockchain with minimal fees.
                 </p>
             </div>
         </div>

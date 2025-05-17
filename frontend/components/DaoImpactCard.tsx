@@ -31,7 +31,7 @@ const DaoImpactCard: React.FC = () => {
                             Your transactions make a real-world impact!
                         </p>
                         <div className="bg-gradient-to-br from-establo-purple-dark via-establo-purple to-establo-purple-light font-semibold px-5 py-3 rounded-lg shadow-sm text-lg inline-block">
-                            1 EUSD  Coin = <span className="font-bold">1 Trees</span>
+                            1 EUSD = <span className="font-bold">1 Trees</span>
                         </div>
                     </div>
                 </div>
