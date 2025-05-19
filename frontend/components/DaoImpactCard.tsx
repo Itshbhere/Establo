@@ -1,43 +1,60 @@
-import React from "react";
-import Image from "next/image";
-import greenecosystem from "@/public/greenecosystem.jpg";
+'use client';
 
-const DaoImpactCard: React.FC = () => {
-    return (
-        <div className="flex flex-col md:flex-row items-stretch rounded-2xl shadow-md w-full min-h-[300px]">
-            {/* Left: Image */}
-            <div className="w-full md:w-1/2">
-                <Image
-                    src={greenecosystem}
-                    alt="Tree Planting"
-                    width={600}
-                    height={400}
-                    className="rounded-2xl object-cover h-full w-full"
-                />
-            </div>
+import React, { useState, useEffect } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import StablecoinService from '@/src/services/stablecoin-service';
+import Link from 'next/link';
 
-            {/* Right: Text */}
-            <div className="w-full md:w-1/2 md:pl-10 flex ">
-                <div className="flex flex-col justify-between h-full text-center md:text-left p-6">
-                    {/* Heading at top */}
-                    <h2 className="text-3xl font-bold text-white">
-                        Green Ecosystem Donation
-                    </h2>
+export default function DaoImpactCard() {
+  const wallet = useWallet();
+  const [daoContributions, setDaoContributions] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
 
-                    {/* Paragraph and stat block at bottom */}
-                    <div>
-                        <p className="text-establo-offwhite mb-4 text-base md:text-lg">
-                            For every stablecoin you use, we’ll donate to plant trees and support a greener future.
-                            Your transactions make a real-world impact!
-                        </p>
-                        <div className="bg-gradient-to-br from-establo-purple-dark via-establo-purple to-establo-purple-light font-semibold px-5 py-3 rounded-lg shadow-sm text-lg inline-block">
-                            1 EUSD = <span className="font-bold">1 Trees</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  useEffect(() => {
+    const fetchDaoData = async () => {
+      try {
+        const service = new StablecoinService(wallet);
+        const contributions = await service.getDaoContributions();
+        setDaoContributions(contributions);
+      } catch (error) {
+        console.error("Failed to fetch DAO data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDaoData();
+  }, [wallet]);
+
+  return (
+    <div className="overflow-hidden rounded-xl bg-gradient-to-br from-establo-purple-dark/10 to-establo-purple-dark/90 p-10 text-white">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div className="mb-6 md:mb-0">
+          <h2 className="mb-2 text-3xl font-bold">DAO Impact</h2>
+          <p className="max-w-lg text-white/90">
+            The Establo DAO has collected{' '}
+            {loading ? (
+              <span className="animate-pulse">loading...</span>
+            ) : (
+              <span className="font-bold">{daoContributions.toLocaleString()} EUSD</span>
+            )}{' '}
+            in contributions from transfer fees, funding real estate acquisitions and ecosystem growth.
+          </p>
+          <Link
+            href="/dashboard/dao-stats"
+            className="mt-4 inline-block rounded-md border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20"
+          >
+            View DAO Statistics
+          </Link>
         </div>
-    );
-};
-
-export default DaoImpactCard;
+        <div className="flex justify-center">
+          <div className="h-24 w-24 rounded-full bg-white/20 p-2">
+            <div className="flex h-full w-full items-center justify-center rounded-full bg-establo-black">
+              <span className="font-mono text-xs">DAO</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

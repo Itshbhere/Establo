@@ -6,11 +6,9 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from '@/components/ui/use-toast';
 import Decimal from 'decimal.js';
 import StablecoinService from '@/src/services/stablecoin-service';
-import { isLessThanOrEqual, toNumber, formatDecimal, isGreaterThan } from '@/src/utils/decimal-helpers';
+import { isLessThanOrEqual, isGreaterThan, toNumber } from '@/src/utils/decimal-helpers';
 
-// Simplified mint page that doesn't rely on too many RPC calls to avoid rate limiting
-
-export default function MintPage() {
+export default function BurnPage() {
   const wallet = useWallet();
   const { publicKey } = wallet;
   const [amount, setAmount] = useState<string>('');
@@ -18,8 +16,6 @@ export default function MintPage() {
   const [connecting, setConnecting] = useState(false);
   const [stablecoinService, setStablecoinService] = useState<StablecoinService | null>(null);
   const [userBalance, setUserBalance] = useState<string>('0');
-  const [usdtBalance, setUsdtBalance] = useState<string>('0');
-  const [reserves, setReserves] = useState<{ usdt: number, realEstate: number } | null>(null);
 
   // Initialize the stablecoin service when the wallet is connected
   useEffect(() => {
@@ -32,8 +28,6 @@ export default function MintPage() {
           
           // Load initial data
           await fetchUserBalance(service);
-          await fetchUsdtBalance(service);
-          await fetchReserves(service);
         } catch (error) {
           console.error("Failed to initialize service:", error);
           toast({
@@ -59,25 +53,7 @@ export default function MintPage() {
     }
   };
 
-  const fetchUsdtBalance = async (service: StablecoinService) => {
-    try {
-      const balance = await service.getUserUsdtBalance();
-      setUsdtBalance(balance.toString());
-    } catch (error) {
-      console.error("Failed to fetch USDT balance:", error);
-    }
-  };
-
-  const fetchReserves = async (service: StablecoinService) => {
-    try {
-      const reserveData = await service.getReserves();
-      setReserves(reserveData);
-    } catch (error) {
-      console.error("Failed to fetch reserves:", error);
-    }
-  };
-
-  const handleMint = async () => {
+  const handleBurn = async () => {
     if (!publicKey || !amount || !stablecoinService) return;
 
     // Validate amount
@@ -92,12 +68,12 @@ export default function MintPage() {
         return;
       }
 
-      // Check if user has enough USDT
-      const usdtBalanceNum = new Decimal(usdtBalance);
-      if (isGreaterThan(amountNum, usdtBalanceNum)) {
+      // Check if user has enough balance
+      const balanceNum = new Decimal(userBalance);
+      if (isGreaterThan(amountNum, balanceNum)) {
         toast({
-          title: "Insufficient USDT",
-          description: "You don't have enough USDT to mint this amount",
+          title: "Insufficient balance",
+          description: "You don't have enough tokens to burn",
           variant: "destructive",
         });
         return;
@@ -105,38 +81,36 @@ export default function MintPage() {
 
       setLoading(true);
       
-      // Mint tokens
+      // Burn tokens
       toast({
-        title: "Minting tokens",
-        description: `Minting ${amount} EUSD tokens to your wallet...`,
+        title: "Burning tokens",
+        description: `Burning ${amount} EUSD tokens from your wallet...`,
       });
       
       try {
-        const tx = await stablecoinService.mint(toNumber(amountNum));
+        const tx = await stablecoinService.burn(toNumber(amountNum));
         
         toast({
           title: "Success",
-          description: `${amount} EUSD tokens have been minted to your wallet. Transaction: ${tx.slice(0, 8)}...`,
+          description: `${amount} EUSD tokens have been burned and you received USDT. Transaction: ${tx.slice(0, 8)}...`,
         });
         
         // Refresh user balance
         fetchUserBalance(stablecoinService);
-        fetchUsdtBalance(stablecoinService);
-        fetchReserves(stablecoinService);
         
-        setAmount(''); // Reset after successful mint
+        setAmount(''); // Reset after successful burn
       } catch (error: any) {
-        console.error("Mint error:", error);
+        console.error("Burn error:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to mint tokens. Check if you have approved USDT for the contract.",
+          description: error.message || "Failed to burn tokens. Check your connection and try again.",
           variant: "destructive",
         });
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to mint tokens",
+        description: error.message || "Failed to burn tokens",
         variant: "destructive",
       });
     } finally {
@@ -145,37 +119,20 @@ export default function MintPage() {
   };
 
   const handleMax = () => {
-    if (usdtBalance && parseFloat(usdtBalance) > 0) {
-      setAmount(usdtBalance);
-    }
+    setAmount(userBalance);
   };
-
-  // Calculate backing percentages
-  const getBackingPercentages = () => {
-    if (!reserves) return { usdt: 70, realEstate: 30 }; // Default values
-    
-    const total = reserves.usdt + reserves.realEstate;
-    if (total === 0) return { usdt: 70, realEstate: 30 };
-    
-    return {
-      usdt: Math.round((reserves.usdt / total) * 100),
-      realEstate: Math.round((reserves.realEstate / total) * 100)
-    };
-  };
-
-  const backingPercentages = getBackingPercentages();
 
   return (
     <div className="container py-12">
       <h1 className="mb-8 text-center text-4xl font-bold md:text-5xl">
-        <span className="gradient-text">Mint</span> EUSD Stablecoin
+        <span className="gradient-text">Redeem</span> EUSD Stablecoin
       </h1>
 
       <div className="mx-auto max-w-2xl">
         <div className="overflow-hidden rounded-lg border border-establo-purple/20 bg-gradient-to-br from-establo-purple-dark/5 to-establo-purple-light/5 p-6 shadow-lg">
           {!publicKey ? (
             <div className="text-center py-8">
-              <p className="mb-6 text-establo-offwhite">Connect your wallet to mint EUSD stablecoin</p>
+              <p className="mb-6 text-establo-offwhite">Connect your wallet to redeem EUSD stablecoin</p>
               <Button
                 variant="gradient"
                 className="w-full max-w-xs mx-auto"
@@ -193,10 +150,6 @@ export default function MintPage() {
           ) : (
             <>
               <div className="mb-6 rounded bg-establo-black/50 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm text-establo-offwhite">Available USDT</span>
-                  <span className="font-mono font-medium">{parseFloat(usdtBalance).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})} USDT</span>
-                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-establo-offwhite">Your EUSD Balance</span>
                   <span className="font-mono font-medium">{parseFloat(userBalance).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})} EUSD</span>
@@ -206,7 +159,7 @@ export default function MintPage() {
               <div className="mb-6">
                 <div className="mb-6">
                   <label htmlFor="amount" className="mb-2 block text-sm text-establo-offwhite">
-                    Amount to Mint
+                    Amount to Redeem
                   </label>
                   <div className="relative">
                     <input
@@ -236,22 +189,16 @@ export default function MintPage() {
                 <div className="mb-4 rounded-md bg-gradient-to-r from-establo-purple-dark/10 to-establo-purple-light/10 p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-establo-offwhite">Exchange Rate</span>
-                    <span className="font-mono text-sm">1 USDT = 1 EUSD</span>
+                    <span className="font-mono text-sm">1 EUSD = 1 USDT</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-establo-offwhite">Transaction Fee</span>
+                    <span className="text-sm text-establo-offwhite">Redemption Fee</span>
                     <span className="font-mono text-sm">~0.00005 SOL</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-establo-offwhite">Backing Ratio</span>
+                    <span className="text-sm text-establo-offwhite">You Will Receive</span>
                     <span className="font-mono text-sm">
-                      {backingPercentages.usdt}% USDT / {backingPercentages.realEstate}% Real Estate
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-establo-offwhite">Backing Status</span>
-                    <span className="font-mono text-sm">
-                      ✅ Fully Backed
+                      {amount ? amount : '0'} USDT
                     </span>
                   </div>
                 </div>
@@ -261,10 +208,10 @@ export default function MintPage() {
                 variant="gradient"
                 className="w-full"
                 size="lg"
-                onClick={handleMint}
+                onClick={handleBurn}
                 disabled={loading || !amount}
               >
-                {loading ? 'Processing...' : 'Mint EUSD'}
+                {loading ? 'Processing...' : 'Redeem EUSD'}
               </Button>
             </>
           )}
@@ -272,16 +219,16 @@ export default function MintPage() {
 
         <div className="mt-10">
           <h2 className="mb-4 text-2xl font-bold">
-            How Minting Works
+            How Redemption Works
           </h2>
           <p className="mb-4 text-establo-offwhite">
-            When you mint EUSD tokens, the contract ensures that your tokens are fully backed by our reserve system:
+            Redeeming your EUSD tokens for USDT is a simple and straightforward process:
           </p>
           <ul className="list-disc pl-5 text-establo-offwhite space-y-2">
-            <li><strong>70% USDT Backing:</strong> Your minted tokens are backed by 70% USDT, ensuring immediate liquidity and stability.</li>
-            <li><strong>30% Real Estate Backing:</strong> The remaining 30% is backed by tokenized real estate assets, providing additional value and stability from real-world assets.</li>
-            <li><strong>1:1 Exchange Rate:</strong> Each EUSD token is minted at a 1:1 exchange rate with USDT, maintaining stable value.</li>
-            <li><strong>Fully Redeemable:</strong> You can redeem your EUSD tokens back to USDT at any time with zero fees.</li>
+            <li><strong>1:1 Exchange Rate:</strong> Each EUSD token is redeemed at a 1:1 exchange rate with USDT.</li>
+            <li><strong>Zero Redemption Fees:</strong> There are no fees for redeeming your tokens.</li>
+            <li><strong>Immediate Processing:</strong> Redemptions are processed immediately on the Solana blockchain.</li>
+            <li><strong>USDT Receipt:</strong> The equivalent amount of USDT is transferred directly to your wallet.</li>
           </ul>
         </div>
       </div>

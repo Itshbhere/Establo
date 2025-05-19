@@ -171,7 +171,7 @@ export const useStablecoin = () => {
       
       toast({
         title: "Success",
-        description: `Minted ${amount} ESTB to ${recipient.toString().slice(0, 8)}...`,
+        description: `Minted ${amount} EUSD to ${recipient.toString().slice(0, 8)}...`,
       });
       
       // Refresh balances
@@ -240,7 +240,7 @@ export const useStablecoin = () => {
       
       toast({
         title: "Success",
-        description: `Transferred ${amount} ESTB to ${recipient.toString().slice(0, 8)}...`,
+        description: `Transferred ${amount} EUSD to ${recipient.toString().slice(0, 8)}...`,
       });
       
       // Refresh balance
@@ -297,7 +297,7 @@ export const useStablecoin = () => {
       
       toast({
         title: "Success",
-        description: `Burned ${amount} ESTB`,
+        description: `Burned ${amount} EUSD`,
       });
       
       // Refresh balances

@@ -6,20 +6,18 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from '@/components/ui/use-toast';
 import Decimal from 'decimal.js';
 import StablecoinService from '@/src/services/stablecoin-service';
-import { isLessThanOrEqual, toNumber, formatDecimal, isGreaterThan } from '@/src/utils/decimal-helpers';
+import { isLessThanOrEqual, isGreaterThan, toNumber } from '@/src/utils/decimal-helpers';
 
-// Simplified mint page that doesn't rely on too many RPC calls to avoid rate limiting
-
-export default function MintPage() {
+export default function TransferPage() {
   const wallet = useWallet();
   const { publicKey } = wallet;
   const [amount, setAmount] = useState<string>('');
+  const [recipient, setRecipient] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [stablecoinService, setStablecoinService] = useState<StablecoinService | null>(null);
   const [userBalance, setUserBalance] = useState<string>('0');
-  const [usdtBalance, setUsdtBalance] = useState<string>('0');
-  const [reserves, setReserves] = useState<{ usdt: number, realEstate: number } | null>(null);
+  const [daoFee, setDaoFee] = useState<number>(0.5); // 0.5% fee
 
   // Initialize the stablecoin service when the wallet is connected
   useEffect(() => {
@@ -32,8 +30,6 @@ export default function MintPage() {
           
           // Load initial data
           await fetchUserBalance(service);
-          await fetchUsdtBalance(service);
-          await fetchReserves(service);
         } catch (error) {
           console.error("Failed to initialize service:", error);
           toast({
@@ -59,28 +55,10 @@ export default function MintPage() {
     }
   };
 
-  const fetchUsdtBalance = async (service: StablecoinService) => {
-    try {
-      const balance = await service.getUserUsdtBalance();
-      setUsdtBalance(balance.toString());
-    } catch (error) {
-      console.error("Failed to fetch USDT balance:", error);
-    }
-  };
+  const handleTransfer = async () => {
+    if (!publicKey || !amount || !recipient || !stablecoinService) return;
 
-  const fetchReserves = async (service: StablecoinService) => {
-    try {
-      const reserveData = await service.getReserves();
-      setReserves(reserveData);
-    } catch (error) {
-      console.error("Failed to fetch reserves:", error);
-    }
-  };
-
-  const handleMint = async () => {
-    if (!publicKey || !amount || !stablecoinService) return;
-
-    // Validate amount
+    // Validate amount and recipient
     try {
       const amountNum = new Decimal(amount);
       if (amountNum.isNaN() || isLessThanOrEqual(amountNum, 0)) {
@@ -92,12 +70,22 @@ export default function MintPage() {
         return;
       }
 
-      // Check if user has enough USDT
-      const usdtBalanceNum = new Decimal(usdtBalance);
-      if (isGreaterThan(amountNum, usdtBalanceNum)) {
+      // Basic validation for Solana address (should be 44 characters)
+      if (!recipient.trim() || recipient.trim().length !== 44) {
         toast({
-          title: "Insufficient USDT",
-          description: "You don't have enough USDT to mint this amount",
+          title: "Invalid recipient",
+          description: "Please enter a valid Solana address",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if user has enough balance
+      const balanceNum = new Decimal(userBalance);
+      if (isGreaterThan(amountNum, balanceNum)) {
+        toast({
+          title: "Insufficient balance",
+          description: "You don't have enough tokens to transfer",
           variant: "destructive",
         });
         return;
@@ -105,38 +93,42 @@ export default function MintPage() {
 
       setLoading(true);
       
-      // Mint tokens
+      // Calculate fee
+      const feeAmount = amountNum.mul(daoFee).div(100);
+      const amountAfterFee = amountNum.sub(feeAmount);
+      
+      // Transfer tokens
       toast({
-        title: "Minting tokens",
-        description: `Minting ${amount} EUSD tokens to your wallet...`,
+        title: "Transferring tokens",
+        description: `Transferring ${amountAfterFee.toString()} EUSD tokens to ${recipient.slice(0, 6)}...${recipient.slice(-4)}`,
       });
       
       try {
-        const tx = await stablecoinService.mint(toNumber(amountNum));
+        const tx = await stablecoinService.transfer(recipient, toNumber(amountNum));
         
         toast({
           title: "Success",
-          description: `${amount} EUSD tokens have been minted to your wallet. Transaction: ${tx.slice(0, 8)}...`,
+          description: `${amountAfterFee.toString()} EUSD tokens have been transferred. Transaction: ${tx.slice(0, 8)}...`,
         });
         
         // Refresh user balance
         fetchUserBalance(stablecoinService);
-        fetchUsdtBalance(stablecoinService);
-        fetchReserves(stablecoinService);
         
-        setAmount(''); // Reset after successful mint
+        // Reset form
+        setAmount('');
+        setRecipient('');
       } catch (error: any) {
-        console.error("Mint error:", error);
+        console.error("Transfer error:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to mint tokens. Check if you have approved USDT for the contract.",
+          description: error.message || "Failed to transfer tokens. Check connection and try again.",
           variant: "destructive",
         });
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to mint tokens",
+        description: error.message || "Failed to transfer tokens",
         variant: "destructive",
       });
     } finally {
@@ -145,37 +137,35 @@ export default function MintPage() {
   };
 
   const handleMax = () => {
-    if (usdtBalance && parseFloat(usdtBalance) > 0) {
-      setAmount(usdtBalance);
+    setAmount(userBalance);
+  };
+
+  // Calculate amount after fee
+  const calculateAmountAfterFee = () => {
+    if (!amount) return '0';
+    try {
+      const amountNum = new Decimal(amount);
+      const feeAmount = amountNum.mul(daoFee).div(100);
+      const amountAfterFee = amountNum.sub(feeAmount);
+      return amountAfterFee.toString();
+    } catch (error) {
+      return '0';
     }
   };
 
-  // Calculate backing percentages
-  const getBackingPercentages = () => {
-    if (!reserves) return { usdt: 70, realEstate: 30 }; // Default values
-    
-    const total = reserves.usdt + reserves.realEstate;
-    if (total === 0) return { usdt: 70, realEstate: 30 };
-    
-    return {
-      usdt: Math.round((reserves.usdt / total) * 100),
-      realEstate: Math.round((reserves.realEstate / total) * 100)
-    };
-  };
-
-  const backingPercentages = getBackingPercentages();
+  const amountAfterFee = calculateAmountAfterFee();
 
   return (
     <div className="container py-12">
       <h1 className="mb-8 text-center text-4xl font-bold md:text-5xl">
-        <span className="gradient-text">Mint</span> EUSD Stablecoin
+        <span className="gradient-text">Transfer</span> EUSD Stablecoin
       </h1>
 
       <div className="mx-auto max-w-2xl">
         <div className="overflow-hidden rounded-lg border border-establo-purple/20 bg-gradient-to-br from-establo-purple-dark/5 to-establo-purple-light/5 p-6 shadow-lg">
           {!publicKey ? (
             <div className="text-center py-8">
-              <p className="mb-6 text-establo-offwhite">Connect your wallet to mint EUSD stablecoin</p>
+              <p className="mb-6 text-establo-offwhite">Connect your wallet to transfer EUSD stablecoin</p>
               <Button
                 variant="gradient"
                 className="w-full max-w-xs mx-auto"
@@ -193,10 +183,6 @@ export default function MintPage() {
           ) : (
             <>
               <div className="mb-6 rounded bg-establo-black/50 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm text-establo-offwhite">Available USDT</span>
-                  <span className="font-mono font-medium">{parseFloat(usdtBalance).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})} USDT</span>
-                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-establo-offwhite">Your EUSD Balance</span>
                   <span className="font-mono font-medium">{parseFloat(userBalance).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})} EUSD</span>
@@ -205,8 +191,22 @@ export default function MintPage() {
 
               <div className="mb-6">
                 <div className="mb-6">
+                  <label htmlFor="recipient" className="mb-2 block text-sm text-establo-offwhite">
+                    Recipient Address
+                  </label>
+                  <input
+                    type="text"
+                    id="recipient"
+                    placeholder="Solana address (e.g., 4Zw7rBeED2Ehg2SY5zH5qcwD9BvLg7WNUKaSCLGTGVvf)"
+                    className="w-full rounded-md border border-establo-purple/30 bg-establo-black/50 px-4 py-2 font-mono text-sm text-establo-white placeholder:text-establo-offwhite/50 focus:border-establo-purple focus:outline-none"
+                    value={recipient}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setRecipient(e.target.value)}
+                  />
+                </div>
+                
+                <div className="mb-6">
                   <label htmlFor="amount" className="mb-2 block text-sm text-establo-offwhite">
-                    Amount to Mint
+                    Amount to Transfer
                   </label>
                   <div className="relative">
                     <input
@@ -235,24 +235,26 @@ export default function MintPage() {
 
                 <div className="mb-4 rounded-md bg-gradient-to-r from-establo-purple-dark/10 to-establo-purple-light/10 p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-establo-offwhite">Exchange Rate</span>
-                    <span className="font-mono text-sm">1 USDT = 1 EUSD</span>
+                    <span className="text-sm text-establo-offwhite">Transfer Fee ({daoFee}%)</span>
+                    <span className="font-mono text-sm">
+                      {amount ? (new Decimal(amount).mul(daoFee).div(100)).toString() : '0'} EUSD
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-establo-offwhite">Transaction Fee</span>
+                    <span className="text-sm text-establo-offwhite">Recipient Will Receive</span>
+                    <span className="font-mono text-sm">
+                      {amountAfterFee} EUSD
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-establo-offwhite">DAO Contribution</span>
+                    <span className="font-mono text-sm">
+                      {amount ? (new Decimal(amount).mul(daoFee).div(100)).toString() : '0'} EUSD
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-establo-offwhite">Network Fee</span>
                     <span className="font-mono text-sm">~0.00005 SOL</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-establo-offwhite">Backing Ratio</span>
-                    <span className="font-mono text-sm">
-                      {backingPercentages.usdt}% USDT / {backingPercentages.realEstate}% Real Estate
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-establo-offwhite">Backing Status</span>
-                    <span className="font-mono text-sm">
-                      ✅ Fully Backed
-                    </span>
                   </div>
                 </div>
               </div>
@@ -261,10 +263,10 @@ export default function MintPage() {
                 variant="gradient"
                 className="w-full"
                 size="lg"
-                onClick={handleMint}
-                disabled={loading || !amount}
+                onClick={handleTransfer}
+                disabled={loading || !amount || !recipient}
               >
-                {loading ? 'Processing...' : 'Mint EUSD'}
+                {loading ? 'Processing...' : 'Transfer EUSD'}
               </Button>
             </>
           )}
@@ -272,16 +274,16 @@ export default function MintPage() {
 
         <div className="mt-10">
           <h2 className="mb-4 text-2xl font-bold">
-            How Minting Works
+            About Transfer Fees
           </h2>
           <p className="mb-4 text-establo-offwhite">
-            When you mint EUSD tokens, the contract ensures that your tokens are fully backed by our reserve system:
+            When you transfer EUSD tokens, a small fee is applied to support the DAO and ecosystem:
           </p>
           <ul className="list-disc pl-5 text-establo-offwhite space-y-2">
-            <li><strong>70% USDT Backing:</strong> Your minted tokens are backed by 70% USDT, ensuring immediate liquidity and stability.</li>
-            <li><strong>30% Real Estate Backing:</strong> The remaining 30% is backed by tokenized real estate assets, providing additional value and stability from real-world assets.</li>
-            <li><strong>1:1 Exchange Rate:</strong> Each EUSD token is minted at a 1:1 exchange rate with USDT, maintaining stable value.</li>
-            <li><strong>Fully Redeemable:</strong> You can redeem your EUSD tokens back to USDT at any time with zero fees.</li>
+            <li><strong>0.5% DAO Fee:</strong> A small fee of 0.5% is applied to each transfer and contributed to the Establo DAO.</li>
+            <li><strong>Sustainable Economics:</strong> This fee helps fund ecosystem development, liquidity provisions, and real estate acquisitions.</li>
+            <li><strong>Transparent & Automated:</strong> All fees are transparently calculated and automatically sent to the DAO treasury.</li>
+            <li><strong>No Mint/Burn Fees:</strong> There are no fees for minting or burning EUSD tokens, only for transfers between wallets.</li>
           </ul>
         </div>
       </div>

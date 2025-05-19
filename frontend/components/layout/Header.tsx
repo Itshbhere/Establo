@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { usePathname } from 'next/navigation'
 
 // Dynamically import WalletButton without SSR
 const WalletButtonNoSSR = dynamic(
@@ -12,8 +13,27 @@ const WalletButtonNoSSR = dynamic(
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const pathname = usePathname()
 
   const toggleMenu = () => setMenuOpen(prev => !prev)
+
+  // Check if the current path matches the link
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return pathname === '/'
+    }
+    return pathname.startsWith(path)
+  }
+  
+  // Navigation links
+  const navLinks = [
+    { href: '/', label: 'Home' },
+    { href: '/wallet', label: 'Wallet' },
+    { href: '/mint', label: 'Mint' },
+    { href: '/burn', label: 'Redeem' },
+    { href: '/transfer', label: 'Transfer' },
+    { href: '/dashboard/dao-stats', label: 'DAO Stats' },
+  ]
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-establo-purple/20 bg-establo-black/80 backdrop-blur-sm">
@@ -28,12 +48,20 @@ export default function Header() {
         {/* Desktop Nav */}
         <nav className="hidden md:flex">
           <ul className="flex gap-8">
-            <li><Link href="/" className="text-establo-offwhite hover:text-establo-white">Home</Link></li>
-            <li><Link href="/swap" className="text-establo-offwhite hover:text-establo-white">Swap</Link></li>
-            <li><Link href="/mint" className="text-establo-offwhite hover:text-establo-white">Mint</Link></li>
-            <li><Link href="/dashboard" className="text-establo-offwhite hover:text-establo-white">Dashboard</Link></li>
-            <li><Link href="/rwa-marketplace" className="text-establo-offwhite hover:text-establo-white">RWA Marketplace</Link></li>
-            <li><Link href="/learn" className="text-establo-offwhite hover:text-establo-white">Learn</Link></li>
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link 
+                  href={link.href} 
+                  className={`transition-colors ${
+                    isActive(link.href) 
+                      ? 'text-establo-white font-medium' 
+                      : 'text-establo-offwhite hover:text-establo-white'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
 
@@ -66,11 +94,21 @@ export default function Header() {
       {menuOpen && (
         <div className="md:hidden bg-establo-black px-4 py-4">
           <ul className="flex flex-col gap-4">
-            <li><Link href="/" className="text-establo-offwhite hover:text-establo-white" onClick={() => setMenuOpen(false)}>Home</Link></li>
-            <li><Link href="/mint" className="text-establo-offwhite hover:text-establo-white" onClick={() => setMenuOpen(false)}>Mint</Link></li>
-            <li><Link href="/dashboard" className="text-establo-offwhite hover:text-establo-white" onClick={() => setMenuOpen(false)}>Dashboard</Link></li>
-            <li><Link href="/rwa-marketplace" className="text-establo-offwhite hover:text-establo-white" onClick={() => setMenuOpen(false)}>RWA Marketplace</Link></li>
-            <li><Link href="/learn" className="text-establo-offwhite hover:text-establo-white" onClick={() => setMenuOpen(false)}>Learn</Link></li>
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link 
+                  href={link.href} 
+                  className={`block transition-colors ${
+                    isActive(link.href) 
+                      ? 'text-establo-white font-medium' 
+                      : 'text-establo-offwhite hover:text-establo-white'
+                  }`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       )}
