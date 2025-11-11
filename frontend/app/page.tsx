@@ -8,22 +8,26 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-16 pb-20">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-establo-black py-24 lg:py-32">
-        <div className="absolute -right-40 -top-40 h-[600px] w-[600px] rounded-full bg-establo-purple/20 blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 h-[600px] w-[600px] rounded-full bg-establo-purple/20 blur-3xl"></div>
+      <section className="relative overflow-hidden py-24 lg:py-32">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url(/establlo.jpg)' }}
+        ></div>
         
-        {/* Floating elements for visual interest */}
-        <div className="absolute top-1/4 left-1/4 h-8 w-8 rounded-full bg-establo-purple/40 animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 h-12 w-12 rounded-full bg-establo-purple/30 animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-3/4 right-1/3 h-6 w-6 rounded-full bg-establo-purple/20 animate-pulse" style={{animationDelay: '2s'}}></div>
+        {/* Overlay for text readability */}
+        <div className="absolute inset-0 bg-establo-black/75"></div>
+        
+        {/* Gradient overlay for better text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-establo-black/40 via-transparent to-establo-black/40"></div>
 
         <div className="container relative z-10 flex flex-col items-center justify-center text-center">
-          <div className="inline-flex items-center rounded-full bg-establo-purple/10 px-4 py-2 mb-6 border border-establo-purple/20">
-            <span className="text-sm font-medium text-establo-purple-light">
+          <div className="inline-flex items-center rounded-full bg-establo-purple/0 px-4 py-2 mb-6 border border-establo-purple/20">
+            <span className="text-sm font-medium text-establo-greyn">
               Hybrid-Backed Stablecoin on Solana
             </span>
           </div>
-          <h1 className="mb-8 text-5xl font-bold leading-tight md:text-6xl lg:text-7xl">
+          <h1 className="mb-8 text-4  xl font-medium leading-tight md:text-6xl lg:text-7xl">
             <span className="gradient-text">Multi-Backed</span> Stablecoin <br className="hidden md:block" /> For The Future
           </h1>
           <p className="mb-10 max-w-2xl text-xl text-establo-offwhite">
@@ -31,10 +35,10 @@ export default function Home() {
             providing enhanced stability and real-world value.
           </p>
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0">
-            <Button variant="gradient" size="lg" asChild className="text-lg px-8 py-6 h-auto font-medium">
+            <Button variant="gradient" size="lg" asChild className="text-lg px-8 py-3 h-auto font-medium">
               <Link href="/mint">Mint EUSD</Link>
             </Button>
-            <Button variant="outline" size="lg" asChild className="text-lg px-8 py-6 h-auto font-medium border-establo-purple/30 hover:bg-establo-purple/10">
+            <Button variant="outline" size="lg" asChild className="text-lg px-8 py-3 h-auto font-medium border-establo-purple/30 hover:bg-establo-purple/10">
               <Link href="/wallet">View Wallet</Link>
             </Button>
           </div>
@@ -130,7 +134,14 @@ export default function Home() {
           <span className="gradient-text">How It Works</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="rounded-xl bg-gradient-to-br from-establo-purple-dark/20 to-establo-purple-dark/10 border border-establo-purple/20 p-6 relative transition-all hover:shadow-lg hover:shadow-establo-purple/10">            <div className="absolute -top-4 -left-4 h-10 w-10 flex items-center justify-center rounded-full bg-establo-purple text-white font-bold">1</div>            <h3 className="mb-4 text-xl font-bold">Mint EUSD</h3>            <p className="text-establo-offwhite">              Deposit USDT to mint EUSD tokens at a 1:1 ratio. Your USDT contributes to the stablecoin's              liquidity backing, ensuring stability and redeemability.            </p>          </div>
+          <div className="rounded-xl bg-gradient-to-br from-establo-purple-dark/20 to-establo-purple-dark/10 border border-establo-purple/20 p-6 relative transition-all hover:shadow-lg hover:shadow-establo-purple/10">
+            <div className="absolute -top-4 -left-4 h-10 w-10 flex items-center justify-center rounded-full bg-establo-purple text-white font-bold">1</div>
+            <h3 className="mb-4 text-xl font-bold">Mint EUSD</h3>
+            <p className="text-establo-offwhite">
+              Deposit USDT to mint EUSD tokens at a 1:1 ratio. Your USDT contributes to the stablecoin's
+              liquidity backing, ensuring stability and redeemability.
+            </p>
+          </div>
           <div className="rounded-xl bg-gradient-to-br from-establo-purple-dark/10 to-establo-purple-light/10 border border-establo-purple/20 p-6 relative transition-all hover:shadow-lg hover:shadow-establo-purple/10">
             <div className="absolute -top-4 -left-4 h-10 w-10 flex items-center justify-center rounded-full bg-establo-purple text-white font-bold">2</div>
             <h3 className="mb-4 text-xl font-bold">Real Estate Backing</h3>
@@ -226,7 +237,7 @@ export default function Home() {
             </p>
           </div>
           <div className="md:w-1/4 flex justify-center md:justify-end">
-            <Button size="lg" variant="outline" className="border-white bg-white/10 text-white hover:bg-white/20 px-8 py-6 h-auto text-lg font-medium" asChild>
+            <Button size="lg" variant="outline" className="border-white bg-white/10 text-white hover:bg-white/20 px-8 py-3 h-auto text-lg font-medium" asChild>
               <Link href="/mint">Get Started Now</Link>
             </Button>
           </div>

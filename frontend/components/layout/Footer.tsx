@@ -6,7 +6,14 @@ export default function Footer() {
       <div className="container">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
-            <h3 className="mb-3 text-lg font-bold">Establo</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <img 
+                src="/logo-establo.svg" 
+                alt="Establo Logo" 
+                className="h-8 w-8"
+              />
+              <h3 className="text-lg font-bold">Establo</h3>
+            </div>
             <p className="text-sm text-establo-offwhite">
               A multi-backed stablecoin powered by USDT and real estate assets on Solana.
             </p>
