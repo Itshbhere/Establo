@@ -52,6 +52,7 @@ module.exports = {
         "establo-black": "#0a0a0a",
         "establo-white": "#f8f8f8",
         "establo-offwhite": "#bababa",
+        "establo-grey": "#9ca3af",
         "establo-purple": "#8a2be2",
         "establo-purple-dark": "#6a0dad",
         "establo-purple-light": "#a45ee5",

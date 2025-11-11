@@ -41,7 +41,11 @@ export default function Header() {
         {/* Logo */}
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-purple-gradient"></div>
+            <img 
+              src="/logo-establo.svg" 
+              alt="Establo Logo" 
+              className="h-8 w-8"
+            />
             <span className="text-xl font-bold">Establo</span>
           </Link>
         </div>
